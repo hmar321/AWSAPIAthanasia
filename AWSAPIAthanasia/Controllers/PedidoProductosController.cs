@@ -1,5 +1,6 @@
 ﻿using ApiAthanasia.Models.Tables;
 using ApiAthanasia.Repositories;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace ApiAthanasia.Controllers
     public class PedidoProductosController : ControllerBase
     {
         private IRepositoryAthanasia repo;
+        private IMapper mapper;
 
-        public PedidoProductosController(IRepositoryAthanasia repo)
+        public PedidoProductosController(IRepositoryAthanasia repo, IMapper mapper)
         {
             this.repo = repo;
+            this.mapper = mapper;
         }
 
         /// <summary>
@@ -28,9 +31,10 @@ namespace ApiAthanasia.Controllers
         [Authorize]
         [HttpPost]
         [Route("[action]/{idusuario}")]
-        public async Task<ActionResult<int>> InsertPedidoProductos(int idusuario, List<PedidoProducto> productos)
+        public async Task<ActionResult<int>> InsertPedidoProductos(int idusuario, List<PedidoProductoPost> productos)
         {
-            int result = await this.repo.InsertListPedidoProductosAsync(idusuario, productos);
+            List<PedidoProducto> mappedProductos = this.mapper.Map<List<PedidoProducto>>(productos);
+            int result = await this.repo.InsertListPedidoProductosAsync(idusuario, mappedProductos);
             if (result == 0)
             {
                 return BadRequest();

@@ -7,7 +7,9 @@ using ApiAthanasia.Models.Views;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using System.Data;
+using System.Data.Common;
 using System.Diagnostics.Metrics;
 
 #region VIEWS
@@ -369,24 +371,60 @@ namespace ApiAthanasia.Repositories
 
         public async Task<List<ProductoSimpleView>> GetProductoSimpleViewTituloAutorAsync()
         {
-            string sql = "SP_PRODUCTOS";
+            string sql = "CALL SP_PRODUCTOS();";
             var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql);
             return await consulta.ToListAsync();
         }
         public async Task<PaginacionModel<ProductoSimpleView>> GetProductosSimplesPaginacionAsyn(int posicion, int ndatos)
         {
-            string sql = "SP_PRODUCTO_SIMPLE_PAGINACION @posicion,@ndatos,@npaginas out";
-            SqlParameter paramposicion = new SqlParameter("@posicion", posicion);
-            SqlParameter paramndatos = new SqlParameter("@ndatos", ndatos);
-            SqlParameter paramnpaginas = new SqlParameter("@npaginas", -1);
-            paramnpaginas.Direction = ParameterDirection.Output;
-            var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql, paramposicion, paramndatos, paramnpaginas);
-            List<ProductoSimpleView> productos = await consulta.ToListAsync();
-            int registros = int.Parse(paramnpaginas.Value.ToString());
+            var productos = new List<ProductoSimpleView>();
+            int numeroPaginas = 0;
+
+            using (DbConnection connection = context.Database.GetDbConnection())
+            {
+                using (DbCommand com = connection.CreateCommand())
+                {
+                    string sql = "SP_PRODUCTO_SIMPLE_PAGINACION";
+                    com.CommandText = sql;
+                    com.CommandType = CommandType.StoredProcedure;
+                    MySqlParameter paramposicion = new MySqlParameter("@param_posicion", posicion);
+                    MySqlParameter paramndatos = new MySqlParameter("@param_ndatos", ndatos);
+                    MySqlParameter paramnpaginas = new MySqlParameter("@param_npaginas", -1);
+                    paramnpaginas.MySqlDbType = MySqlDbType.Int32;
+                    paramnpaginas.Direction = ParameterDirection.Output;
+                    com.Parameters.Add(paramposicion);
+                    com.Parameters.Add(paramndatos);
+                    com.Parameters.Add(paramnpaginas);
+                    await connection.OpenAsync();
+                    using (DbDataReader reader = await com.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var producto = new ProductoSimpleView
+                            {
+                                IdProducto = int.Parse(reader["ID_PRODUCTO"].ToString()),
+                                IdLibro = int.Parse(reader["ID_LIBRO"].ToString()),
+                                Titulo = reader["TITULO"].ToString(),
+                                Portada = reader["PORTADA"].ToString(),
+                                Autor = reader["AUTOR"].ToString(),
+                                Precio = double.Parse(reader["PRECIO"].ToString()),
+                                IdFormato = int.Parse(reader["ID_FORMATO"].ToString()),
+                                Formato = reader["FORMATO"].ToString(),
+                                Unidades = int.Parse(reader["UNIDADES"].ToString())
+                            };
+                            productos.Add(producto);
+                        }
+                        await reader.CloseAsync();
+                        numeroPaginas = (int)paramnpaginas.Value;
+                        com.Parameters.Clear();
+                        await connection.CloseAsync();
+                    }
+                }
+            }
             PaginacionModel<ProductoSimpleView> model = new PaginacionModel<ProductoSimpleView>
             {
                 Lista = productos,
-                NumeroPaginas = registros
+                NumeroPaginas = numeroPaginas
             };
             return model;
         }
@@ -399,10 +437,10 @@ namespace ApiAthanasia.Repositories
             }
             string busqueda = palabra.Limpiar();
             string sql = "SP_SEARCH_PRODUCTOS @busqueda,@posicion,@ndatos,@npaginas out";
-            SqlParameter parambusqueda = new SqlParameter("@busqueda", "%" + busqueda + "%");
-            SqlParameter paramposicion = new SqlParameter("@posicion", posicion);
-            SqlParameter paramndatos = new SqlParameter("@ndatos", ndatos);
-            SqlParameter paramnpaginas = new SqlParameter("@npaginas", -1);
+            MySqlParameter parambusqueda = new MySqlParameter("@busqueda", "%" + busqueda + "%");
+            MySqlParameter paramposicion = new MySqlParameter("@posicion", posicion);
+            MySqlParameter paramndatos = new MySqlParameter("@ndatos", ndatos);
+            MySqlParameter paramnpaginas = new MySqlParameter("@npaginas", -1);
             paramnpaginas.Direction = ParameterDirection.Output;
             var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql, parambusqueda, paramposicion, paramndatos, paramnpaginas);
             List<ProductoSimpleView> productos = await consulta.ToListAsync();
@@ -441,12 +479,12 @@ namespace ApiAthanasia.Repositories
             }
             string busqueda = palabra.Limpiar();
             string sql = "SP_SEARCH_PRODUCTOS_FILTRO @busqueda,@posicion,@ndatos,@categorias,@generos,@npaginas out";
-            SqlParameter parambusqueda = new SqlParameter("@busqueda", "%" + busqueda + "%");
-            SqlParameter paramposicion = new SqlParameter("@posicion", posicion);
-            SqlParameter paramndatos = new SqlParameter("@ndatos", ndatos);
-            SqlParameter paramcategorias = new SqlParameter("@categorias", categorias);
-            SqlParameter paramgeneros = new SqlParameter("@generos", generos);
-            SqlParameter paramnpaginas = new SqlParameter("@npaginas", -1);
+            MySqlParameter parambusqueda = new MySqlParameter("@busqueda", "%" + busqueda + "%");
+            MySqlParameter paramposicion = new MySqlParameter("@posicion", posicion);
+            MySqlParameter paramndatos = new MySqlParameter("@ndatos", ndatos);
+            MySqlParameter paramcategorias = new MySqlParameter("@categorias", categorias);
+            MySqlParameter paramgeneros = new MySqlParameter("@generos", generos);
+            MySqlParameter paramnpaginas = new MySqlParameter("@npaginas", -1);
             paramnpaginas.Direction = ParameterDirection.Output;
             var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql, parambusqueda, paramposicion, paramndatos, paramcategorias, paramgeneros, paramnpaginas);
             List<ProductoSimpleView> productos = await consulta.ToListAsync();
@@ -647,7 +685,7 @@ namespace ApiAthanasia.Repositories
 
         public async Task<List<Genero>> GetAllGenerosAsync()
         {
-            string sql = "SP_GENEROS";
+            string sql = "CALL SP_GENEROS();";
             return await this.context.Generos.FromSqlRaw(sql).ToListAsync();
         }
 
@@ -745,7 +783,7 @@ namespace ApiAthanasia.Repositories
         public async Task<int> UpdatePedidoEstadoCancelarAsync(int idpedido)
         {
             Pedido pedido = await this.context.Pedidos.FirstOrDefaultAsync(p => p.IdPedido == idpedido);
-            if (pedido != null)
+            if (pedido == null)
             {
                 return -1;
             }

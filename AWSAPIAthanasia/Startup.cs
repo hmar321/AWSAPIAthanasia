@@ -32,7 +32,7 @@ public class Startup
         HelperActionServicesOAuth helper = new HelperActionServicesOAuth(secretClient);
         services.AddSingleton<HelperActionServicesOAuth>(helper);
         KeyVaultSecret secret = secretClient.GetSecret("SqlServerAzure");
-        string connectionString = secret.Value;
+        string connectionString = "server=localhost;port=3306;user id=root;password=Admin123@;database=athanasia";
         services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
         services.AddOpenApiDocument(document =>
         {
@@ -55,7 +55,7 @@ public class Startup
         services.AddAutoMapper(typeof(MappingProfile));
         services.AddTransient<IRepositoryAthanasia, RepositoryAthanasia>();
         services.AddDbContext<AthanasiaContext>(
-            options => options.UseSqlServer(connectionString)
+            options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
             );
     }
 

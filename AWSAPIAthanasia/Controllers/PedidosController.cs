@@ -9,9 +9,9 @@ namespace ApiAthanasia.Controllers
     [ApiController]
     public class PedidosController : ControllerBase
     {
-        private RepositoryAthanasia repo;
+        private IRepositoryAthanasia repo;
 
-        public PedidosController(RepositoryAthanasia repo)
+        public PedidosController(IRepositoryAthanasia repo)
         {
             this.repo = repo;
         }

@@ -10,6 +10,8 @@ namespace ApiAthanasia.Helpers
         {
             CreateMap<ProductoSimpleView, PedidoProducto>();
             CreateMap<PedidoProducto, ProductoSimpleView>();
+            CreateMap<PedidoProducto, PedidoProductoPost>();
+            CreateMap<PedidoProductoPost, PedidoProducto>();
         }
     }
 }
