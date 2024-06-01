@@ -5,322 +5,350 @@ using ApiAthanasia.Models.Tables;
 using ApiAthanasia.Models.Util;
 using ApiAthanasia.Models.Views;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics.Metrics;
 
 #region VIEWS
-//create view V_PEDIDO_PRODUCTO as
-//select 
-//ISNULL(pp.ID_PEDIDO_PRODUCTO,-1) ID_PEDIDO_PRODUCTO,
-//l.ID_LIBRO,
-//l.TITULO,
-//l.PORTADA,
-//ISNULL(a.NOMBRE, 'Desconocido') AUTOR,
-//p.ID_FORMATO,
-//f.NOMBRE FORMATO,
-//pp.UNIDADES,
-//p.PRECIO,
-//pp.ID_PEDIDO,
-//pp.ID_PRODUCTO
-//from PEDIDOS_PRODUCTOS pp
-//inner join PRODUCTO p on pp.ID_PRODUCTO=p.ID_PRODUCTO
-//inner join FORMATO f on p.ID_FORMATO=f.ID_FORMATO
-//inner join LIBRO l on p.ID_LIBRO=l.ID_LIBRO
-//left join AUTOR a on l.ID_AUTOR=a.ID_AUTOR
+//CREATE VIEW `V_PEDIDO_PRODUCTO` AS
+//SELECT
+//  COALESCE(pp.ID_PEDIDO_PRODUCTO, -1) AS ID_PEDIDO_PRODUCTO,
+//  l.ID_LIBRO,
+//  l.TITULO,
+//  l.PORTADA,
+//  COALESCE(a.NOMBRE, 'Desconocido') AS AUTOR,
+//  p.ID_FORMATO,
+//  f.NOMBRE AS FORMATO,
+//  pp.UNIDADES,
+//  p.PRECIO,
+//  pp.ID_PEDIDO,
+//  pp.ID_PRODUCTO
+//FROM PEDIDOS_PRODUCTOS pp
+//INNER JOIN PRODUCTO p ON pp.ID_PRODUCTO = p.ID_PRODUCTO
+//INNER JOIN FORMATO f ON p.ID_FORMATO = f.ID_FORMATO
+//INNER JOIN LIBRO l ON p.ID_LIBRO = l.ID_LIBRO
+//LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR;
 
-//alter view V_PEDIDO as
-//select 
-//ISNULL(p.ID_PEDIDO,-1) ID_PEDIDO,
-//p.ID_USUARIO,
-//p.FECHA_SOLICITUD,
-//P.FECHA_ESTIMADA,
-//ep.NOMBRE ESTADO_PEDIDO,
-//STRING_AGG(l.TITULO, ', ') LIBROS
-//from PEDIDO p
-//inner join ESTADO_PEDIDO ep on p.ID_ESTADO_PEDIDO=ep.ID_ESTADO_PEDIDO
-//inner join PEDIDOS_PRODUCTOS pp on p.ID_PEDIDO=pp.ID_PEDIDO
-//inner join PRODUCTO pr on pp.ID_PRODUCTO=pr.ID_PRODUCTO
-//inner join LIBRO l on pr.ID_LIBRO=L.ID_LIBRO
-//GROUP BY p.ID_PEDIDO, p.ID_USUARIO, p.FECHA_SOLICITUD, P.FECHA_ESTIMADA, ep.NOMBRE
+//CREATE VIEW `V_PEDIDO` AS
+//SELECT
+//  p.ID_PEDIDO,
+//  p.ID_USUARIO,
+//  p.FECHA_SOLICITUD,
+//  p.FECHA_ESTIMADA,
+//  ep.NOMBRE AS ESTADO_PEDIDO,
+//  GROUP_CONCAT(l.TITULO SEPARATOR ', ') AS LIBROS
+//FROM PEDIDO p
+//INNER JOIN ESTADO_PEDIDO ep ON p.ID_ESTADO_PEDIDO = ep.ID_ESTADO_PEDIDO
+//INNER JOIN PEDIDOS_PRODUCTOS pp ON p.ID_PEDIDO = pp.ID_PEDIDO
+//INNER JOIN PRODUCTO pr ON pp.ID_PRODUCTO = pr.ID_PRODUCTO
+//INNER JOIN LIBRO l ON pr.ID_LIBRO = l.ID_LIBRO
+//GROUP BY p.ID_PEDIDO, p.ID_USUARIO, p.FECHA_SOLICITUD, p.FECHA_ESTIMADA, ep.NOMBRE;
 
-//create view V_PRODUCTO as
-//select
-//	ISNULL(p.ID_PRODUCTO, - 1) ID_PRODUCTO,
-//    l.ID_LIBRO,
-//    l.TITULO,
-//    l.SINOPSIS,
-//    l.FECHA_PUBLICACION,
-//    l.PORTADA,
-//    c.NOMBRE CATEGORIA,
-//    a.NOMBRE AUTOR,
-//    STRING_AGG(g.NOMBRE, ', ') GENEROS,
-//    s.NOMBRE SAGA,
-//    p.ISBN,
-//    f.NOMBRE FORMATO,
-//    p.PRECIO,
-//    e.NOMBRE EDITORIAL,
-//    e.LOGO LOGO
-//from LIBRO l 
-//left join CATEGORIA c on l.ID_CATEGORIA = c.ID_CATEGORIA and l.TITULO is not null
-//left join AUTOR a on l.ID_AUTOR = a.ID_AUTOR and a.NOMBRE is not null
-//left join SAGA s on s.ID_SAGA = l.ID_SAGA 
-//left join GENEROS_LIBROS gl on gl.ID_LIBRO = l.ID_LIBRO 
-//left join GENERO g on g.ID_GENERO = gl.ID_GENERO 
-//inner join PRODUCTO p on l.ID_LIBRO = p.ID_LIBRO and p.ISBN is not null and p.PRECIO is not null
-//left join EDITORIAL e on e.ID_EDITORIAL = p.ID_EDITORIAL
-//inner join FORMATO f on f.ID_FORMATO=p.ID_FORMATO
-//group by p.ID_PRODUCTO, l.ID_LIBRO, l.TITULO, c.NOMBRE, a.NOMBRE,
-//s.NOMBRE, l.SINOPSIS, l.FECHA_PUBLICACION, l.PORTADA,
-//p.ISBN, p.PRECIO, e.NOMBRE, e.LOGO, f.NOMBRE
+//CREATE VIEW `V_PRODUCTO` AS
+//SELECT
+//  COALESCE(p.ID_PRODUCTO, -1) AS ID_PRODUCTO,
+//  l.ID_LIBRO,
+//  l.TITULO,
+//  l.SINOPSIS,
+//  l.FECHA_PUBLICACION,
+//  l.PORTADA,
+//  c.NOMBRE AS CATEGORIA,
+//  a.NOMBRE AS AUTOR,
+//  GROUP_CONCAT(g.NOMBRE SEPARATOR ', ') AS GENEROS,
+//  s.NOMBRE AS SAGA,
+//  p.ISBN,
+//  f.NOMBRE AS FORMATO,
+//  p.PRECIO,
+//  e.NOMBRE AS EDITORIAL,
+//  e.LOGO
+//FROM LIBRO l
+//LEFT JOIN CATEGORIA c ON l.ID_CATEGORIA = c.ID_CATEGORIA AND l.TITULO IS NOT NULL
+//LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR AND a.NOMBRE IS NOT NULL
+//LEFT JOIN SAGA s ON s.ID_SAGA = l.ID_SAGA
+//LEFT JOIN GENEROS_LIBROS gl ON gl.ID_LIBRO = l.ID_LIBRO
+//LEFT JOIN GENERO g ON g.ID_GENERO = gl.ID_GENERO
+//INNER JOIN PRODUCTO p ON l.ID_LIBRO = p.ID_LIBRO AND p.ISBN IS NOT NULL AND p.PRECIO IS NOT NULL
+//LEFT JOIN EDITORIAL e ON e.ID_EDITORIAL = p.ID_EDITORIAL
+//INNER JOIN FORMATO f ON f.ID_FORMATO = p.ID_FORMATO
+//GROUP BY p.ID_PRODUCTO, l.ID_LIBRO, l.TITULO, c.NOMBRE, a.NOMBRE,
+//         s.NOMBRE, l.SINOPSIS, l.FECHA_PUBLICACION, l.PORTADA,
+//         p.ISBN, p.PRECIO, e.NOMBRE, e.LOGO;
 
 
 
-//create view V_PRODUCTO_SIMPLE as
-//select
-//    ISNULL(p.ID_PRODUCTO, -1) ID_PRODUCTO,
-//    l.ID_LIBRO,
-//    l.TITULO,
-//    l.PORTADA,
-//    a.NOMBRE AUTOR,
-//    p.PRECIO,
-//    p.ID_FORMATO,
-//    f.NOMBRE FORMATO,
-//      CAST(1 as int) UNIDADES
-//from Libro l
-//left join AUTOR a on l.ID_AUTOR=a.ID_AUTOR and l.TITULO is not null and a.NOMBRE is not null
-//inner join PRODUCTO p on l.ID_LIBRO=p.ID_LIBRO and p.PRECIO is not null
-//inner join FORMATO f on p.ID_FORMATO=f.ID_FORMATO and f.NOMBRE is not null
+//CREATE VIEW `V_PRODUCTO_SIMPLE` AS
+//SELECT
+//  COALESCE(p.ID_PRODUCTO, -1) AS ID_PRODUCTO,
+//  l.ID_LIBRO,
+//  l.TITULO,
+//  l.PORTADA,
+//  a.NOMBRE AS AUTOR,
+//  p.PRECIO,
+//  p.ID_FORMATO,
+//  f.NOMBRE AS FORMATO,
+//  1 AS UNIDADES  -- Cast to INT explicitly for consistency
+//FROM Libro l
+//LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR AND l.TITULO IS NOT NULL AND a.NOMBRE IS NOT NULL
+//INNER JOIN PRODUCTO p ON l.ID_LIBRO = p.ID_LIBRO AND p.PRECIO IS NOT NULL
+//INNER JOIN FORMATO f ON p.ID_FORMATO = f.ID_FORMATO AND f.NOMBRE IS NOT NULL;
 
-//alter view V_PEDIDO_PRODUCTO as
-// select 
-//   ISNULL(pp.ID_PEDIDO_PRODUCTO,-1) ID_PEDIDO_PRODUCTO,
-//   p.ID_PEDIDO,
-//   l.TITULO,
-//   f.NOMBRE FORMATO,
-//   pp.UNIDADES,
-//   pr.PRECIO,
-//   ep.NOMBRE ESTADO_PEDIDO
-//from PEDIDO p
-//inner join ESTADO_PEDIDO ep on p.ID_ESTADO_PEDIDO=ep.ID_ESTADO_PEDIDO
-//inner join PEDIDOS_PRODUCTOS pp on p.ID_PEDIDO=pp.ID_PEDIDO
-//inner join PRODUCTO pr on pr.ID_PRODUCTO=pp.ID_PRODUCTO
-//inner join FORMATO f on pr.ID_FORMATO=f.ID_FORMATO
-//inner join LIBRO l on pr.ID_LIBRO=l.ID_LIBRO
+//CREATE VIEW `V_PRODUCTO_BUSCADO` AS
+//SELECT
+//  COALESCE(p.ID_PRODUCTO, -1) AS ID_PRODUCTO,
+//  l.TITULO,
+//  l.ID_LIBRO,
+//  l.PORTADA,
+//  a.NOMBRE AS AUTOR,
+//  p.PRECIO,
+//  p.ID_FORMATO,
+//  f.NOMBRE AS FORMATO,
+//  G.ID_GENERO,
+//  l.ID_CATEGORIA,
+//  1 AS UNIDADES,
+//  s.NOMBRE AS SAGA
+//FROM Libro l
+//LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR AND l.TITULO IS NOT NULL AND a.NOMBRE IS NOT NULL
+//INNER JOIN PRODUCTO p ON l.ID_LIBRO = p.ID_LIBRO AND p.PRECIO IS NOT NULL
+//INNER JOIN FORMATO f ON p.ID_FORMATO = f.ID_FORMATO AND f.NOMBRE IS NOT NULL
+//INNER JOIN GENEROS_LIBROS gl ON l.ID_LIBRO = gl.ID_LIBRO  -- Changed to inner join for required data
+//INNER JOIN GENERO g ON gl.ID_GENERO = g.ID_GENERO
+//LEFT JOIN SAGA s ON l.ID_SAGA = s.ID_SAGA;
 
-//create view V_PRODUCTO_BUSCADO as
-//select
-//    ISNULL(p.ID_PRODUCTO, -1) ID_PRODUCTO,
-//    l.TITULO,
-//    l.ID_LIBRO,
-//    l.PORTADA,
-//    a.NOMBRE AUTOR,
-//    p.PRECIO,
-//    p.ID_FORMATO,
-//    f.NOMBRE FORMATO,
-//    G.ID_GENERO,
-//    l.ID_CATEGORIA,
-//	1 UNIDADES,
-//    s.NOMBRE SAGA
-//from Libro l
-//left join AUTOR a on l.ID_AUTOR=a.ID_AUTOR and l.TITULO is not null and a.NOMBRE is not null
-//inner join PRODUCTO p on l.ID_LIBRO=p.ID_LIBRO and p.PRECIO is not null
-//inner join FORMATO f on p.ID_FORMATO=f.ID_FORMATO and f.NOMBRE is not null
-//inner join GENEROS_LIBROS gl on l.ID_LIBRO=gl.ID_LIBRO
-//inner join GENERO g on gl.ID_GENERO=g.ID_GENERO
-//left join SAGA s on l.ID_SAGA=s.ID_SAGA
+//CREATE VIEW `V_FORMATO_LIBRO` AS
+//SELECT
+//  COALESCE(p.ID_PRODUCTO, -1) AS ID_PRODUCTO,
+//  p.ID_LIBRO,
+//  f.NOMBRE AS FORMATO
+//FROM PRODUCTO p
+//INNER JOIN FORMATO f ON f.ID_FORMATO = p.ID_FORMATO;
 
-//create view V_FORMATO_LIBRO as
-//select ISNULL(ID_PRODUCTO,-1) ID_PRODUCTO, ID_LIBRO, f.NOMBRE FORMATO from PRODUCTO p
-//inner join FORMATO f on f.ID_FORMATO=p.ID_FORMATO
-
-//create view V_INFORMACION_COMPRA_USUARIO as
-//select 
-//ISNULL(ic.ID_INFORMACION_COMPRA,-1) ID_INFORMACION_COMPRA,
-//ic.NOMBRE,
-//ic.DIRECCION,
-//ic.INDICACIONES,
-//ic.ID_METODO_PAGO,
-//mp.NOMBRE METODO_PAGO,
-//ic.ID_USUARIO
-//from INFORMACION_COMPRA ic
-//inner join METODO_PAGO mp on ic.ID_METODO_PAGO=mp.ID_METODO_PAGO
+//CREATE VIEW `V_INFORMACION_COMPRA_USUARIO` AS
+//SELECT
+//  COALESCE(ic.ID_INFORMACION_COMPRA, -1) AS ID_INFORMACION_COMPRA,
+//  ic.NOMBRE,
+//  ic.DIRECCION,
+//  ic.INDICACIONES,
+//  ic.ID_METODO_PAGO,
+//  mp.NOMBRE AS METODO_PAGO,
+//  ic.ID_USUARIO
+//FROM INFORMACION_COMPRA ic
+//INNER JOIN METODO_PAGO mp ON ic.ID_METODO_PAGO = mp.ID_METODO_PAGO;
 
 #endregion
 
 #region FUNCTIONS
 
-//create function LIMPIAR (@str nvarchar(MAX))
-//returns nvarchar(MAX)
-//as
-//begin
-//    set @str = REPLACE(@str, 'á', 'a')
-//    set @str = REPLACE(@str, 'é', 'e')
-//    set @str = REPLACE(@str, 'í', 'i')
-//    set @str = REPLACE(@str, 'ó', 'o')
-//    set @str = REPLACE(@str, 'ú', 'u')
-//    set @str = REPLACE(@str, 'Á', 'A')
-//    set @str = REPLACE(@str, 'É', 'E')
-//    set @str = REPLACE(@str, 'Í', 'I')
-//    set @str = REPLACE(@str, 'Ó', 'O')
-//    set @str = REPLACE(@str, 'Ú', 'U')
-//    set @str = REPLACE(@str, '&', '')
-//    set @str = REPLACE(@str, '-', '')
-//    set @str = REPLACE(@str, '_', '')
-//    set @str = REPLACE(@str, '+', '')
-//    set @str = REPLACE(@str, '"', '')
-//    set @str = REPLACE(@str, '''', '')
-//    set @str = REPLACE(@str, ',', '')
-//    set @str = REPLACE(@str, '.', '')
-//    set @str = REPLACE(@str, '?', '')
-//    set @str = REPLACE(@str, '`', '')
-//	set @str = REPLACE(@str, '!', '')
-//    set @str = REPLACE(@str, '¡', '')
-//    set @str = REPLACE(@str, '¿', '')
-//    set @str = REPLACE(@str, 'ñ', 'n')
-//    set @str = REPLACE(@str, 'Ñ', 'N')
-//    set @str = REPLACE(@str, 'ü', 'u')
-//    set @str = REPLACE(@str, 'Ü', 'U')
-//	set @str = REPLACE(@str, ' ', '')
-//	set @str = UPPER(@str)
-//    return @str
-//end
+//DELIMITER $$
+//DROP FUNCTION if EXISTS LIMPIAR $$
+//CREATE FUNCTION LIMPIAR(str NVARCHAR(255))
+//RETURNS NVARCHAR(255)
+//DETERMINISTIC
+//BEGIN
+//    SET str = REPLACE(str, 'á', 'a');
+//SET str = REPLACE(str, 'é', 'e');
+//SET str = REPLACE(str, 'í', 'i');
+//SET str = REPLACE(str, 'ó', 'o');
+//SET str = REPLACE(str, 'ú', 'u');
+//SET str = REPLACE(str, 'Á', 'A');
+//SET str = REPLACE(str, 'É', 'E');
+//SET str = REPLACE(str, 'Í', 'I');
+//SET str = REPLACE(str, 'Ó', 'O');
+//SET str = REPLACE(str, 'Ú', 'U');
+//SET str = REPLACE(str, '&', '');
+//SET str = REPLACE(str, '-', '');
+//SET str = REPLACE(str, '_', '');
+//SET str = REPLACE(str, '+', '');
+//SET str = REPLACE(str, '"', '');
+//SET str = REPLACE(str, '''', '');
+//SET str = REPLACE(str, ',', '');
+//SET str = REPLACE(str, '.', '');
+//SET str = REPLACE(str, '?', '');
+//SET str = REPLACE(str, '`', '');
+//SET str = REPLACE(str, '!', '');
+//SET str = REPLACE(str, '¡', '');
+//SET str = REPLACE(str, '¿', '');
+//SET str = REPLACE(str, 'ñ', 'n');
+//SET str = REPLACE(str, 'Ñ', 'N');
+//SET str = REPLACE(str, 'ü', 'u');
+//SET str = REPLACE(str, 'Ü', 'U');
+//SET str = REPLACE(str, ' ', '');
+//SET str = UPPER(str);
+//RETURN str;
+//END $$
+//DELIMITER ;
 
 #endregion
 
 #region PROCEDURES
 
-//create procedure SP_SEARCH_PRODUCTOS
-//(@busqueda nvarchar(255), @posicion int, @ndatos int, @npaginas int out)
-//as
-//	select @npaginas=CEILING(COUNT(ID_PRODUCTO)/CAST(@ndatos AS FLOAT)) from
-//		(select ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA, ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//		from
-//			(select distinct ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA
-//			from V_PRODUCTO_BUSCADO
-//			) DISTINTOS
-//		) AGRUPADOS
-//	where REPETICION=1
-//	and TITULO is not null
-//	and AUTOR is not null
-//	and dbo.LIMPIAR(TITULO) like @busqueda
-//	or dbo.LIMPIAR(AUTOR) like @busqueda
-//	and REPETICION = 1
-//	or dbo.LIMPIAR(SAGA) like @busqueda
-//	and REPETICION = 1
-//	select ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
-//	from
-//		(select ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
-//        ROW_NUMBER() over (order by ID_PRODUCTO) POSICION
-//		from 
-//		(select 
-//		ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA,
-//        ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//		from
-//			(select distinct ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA
-//			from V_PRODUCTO_BUSCADO) QUERY) GRUPO
-//		where REPETICION = 1
-//		and TITULO is not null
-//		and AUTOR is not null
-//		and dbo.LIMPIAR(TITULO) like @busqueda
-//		or dbo.LIMPIAR(AUTOR) like @busqueda
-//		and REPETICION = 1
-//		or dbo.LIMPIAR(SAGA) like @busqueda
-//		and REPETICION = 1) QUERY
-//	where POSICION>=@ndatos*@posicion-(@ndatos-1) and POSICION<=@posicion*@ndatos
-//	order by ID_PRODUCTO
-//go
+//DELIMITER $$
+//DROP PROCEDURE IF EXISTS SP_GENEROS $$
+//CREATE PROCEDURE SP_GENEROS()
+//BEGIN
+//    SELECT DISTINCT g.ID_GENERO, g.NOMBRE, g.DESCRIPCION
+//    FROM GENERO g
+//    INNER JOIN GENEROS_LIBROS gl ON gl.ID_GENERO = g.ID_GENERO
+//    GROUP BY g.ID_GENERO, g.NOMBRE, g.DESCRIPCION
+//    ORDER BY g.NOMBRE;
+//END $$
 
-//create procedure SP_PRODUCTOS
-//as
+//DELIMITER ;
+
+//DELIMITER $$
+//DROP PROCEDURE IF EXISTS SP_PRODUCTO_SIMPLE_PAGINACION $$
+//CREATE PROCEDURE SP_PRODUCTO_SIMPLE_PAGINACION(
+//    IN param_posicion INT,
+//    IN param_ndatos INT,
+//    OUT param_npaginas INT
+//)
+//BEGIN
+//    SELECT CEILING(COUNT(ID_PRODUCTO) / param_ndatos) INTO param_npaginas
+//    FROM (
+//        SELECT ID_PRODUCTO, ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//        FROM V_PRODUCTO_SIMPLE
+//    ) AS AGRUPADOS
+//    WHERE REPETICION = 1;
 //SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
-//FROM (
-//	SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
-//           ROW_NUMBER() OVER(PARTITION BY TITULO ORDER BY ID_PRODUCTO) AS REPETICION
-//    FROM V_PRODUCTO_SIMPLE) PRODUCTOS
-//WHERE REPETICION = 1
-//and TITULO is not null
-//and AUTOR is not null
-//order by ID_PRODUCTO
-//go
+//    FROM (
+//        SELECT
+//            ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
+//        ROW_NUMBER() OVER (ORDER BY ID_PRODUCTO) AS POSICION
+//        FROM (
+//            SELECT
+//                ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
+//            ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//            FROM V_PRODUCTO_SIMPLE
+//        ) AS QUERY
+//        WHERE REPETICION = 1
+//    ) AS PRIMEROS
+//    WHERE POSICION BETWEEN (param_posicion - 1) * param_ndatos + 1 AND param_posicion * param_ndatos
+//    ORDER BY ID_PRODUCTO;
+//END $$
+//DELIMITER ;
 
+//DELIMITER $$
+//DROP PROCEDURE IF EXISTS SP_PRODUCTOS $$
+//CREATE PROCEDURE SP_PRODUCTOS()
+//BEGIN
+//    SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
+//    FROM (
+//        SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
+//               ROW_NUMBER() OVER (PARTITION BY TITULO ORDER BY ID_PRODUCTO) AS REPETICION
+//        FROM V_PRODUCTO_SIMPLE
+//    ) AS PRODUCTOS
+//    WHERE REPETICION = 1
+//      AND TITULO IS NOT NULL
+//      AND AUTOR IS NOT NULL
+//    ORDER BY ID_PRODUCTO;
+//END $$
+//DELIMITER ;
 
-//create procedure SP_PRODUCTO_SIMPLE_PAGINACION
-//(@posicion int, @ndatos int, @npaginas int out)
-//as
-//	select @npaginas=CEILING(COUNT(ID_PRODUCTO)/CAST(@ndatos AS FLOAT)) from
-//	(select ID_PRODUCTO, ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//	from V_PRODUCTO_SIMPLE) AGRUPADOS
-//	where REPETICION=1
-//	select ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES from
-//		(select 
-//			ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
-//            ROW_NUMBER() over (order by ID_PRODUCTO) POSICION
-//		from
-//			(select
-//			ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
-//            ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//			from V_PRODUCTO_SIMPLE) QUERY
-//		where REPETICION=1) PRIMEROS
-//	where  POSICION>=@ndatos*@posicion-(@ndatos-1) and POSICION<=@posicion*@ndatos
-//go
+//DELIMITER $$
+//DROP PROCEDURE IF EXISTS SP_SEARCH_PRODUCTOS $$
+//CREATE PROCEDURE SP_SEARCH_PRODUCTOS(
+//    IN param_busqueda NVARCHAR(255),
+//    IN param_posicion INT,
+//    IN param_ndatos INT,
+//    OUT param_npaginas INT
+//)
+//BEGIN
+//    SELECT CEILING(COUNT(ID_PRODUCTO) / param_ndatos) INTO param_npaginas
+//    FROM (
+//        SELECT ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA,
+//               ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//        FROM (
+//            SELECT DISTINCT ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA
+//            FROM V_PRODUCTO_BUSCADO
+//        ) AS DISTINTOS
+//    ) AS AGRUPADOS
+//    WHERE REPETICION = 1
+//      AND TITULO IS NOT NULL
+//      AND AUTOR IS NOT NULL
+//      AND (LIMPIAR(TITULO) LIKE LIMPIAR(param_busqueda)
+//           OR LIMPIAR(AUTOR) LIKE LIMPIAR(param_busqueda)
+//           OR LIMPIAR(SAGA) LIKE LIMPIAR(param_busqueda));
+//SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
+//    FROM (
+//        SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
+//           ROW_NUMBER() OVER (ORDER BY ID_PRODUCTO) AS POSICION
+//        FROM (
+//            SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA,
+//               ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//            FROM (
+//                SELECT DISTINCT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA
+//                FROM V_PRODUCTO_BUSCADO
+//            ) AS QUERY
+//        ) AS GRUPO
+//        WHERE REPETICION = 1
+//          AND TITULO IS NOT NULL
+//          AND AUTOR IS NOT NULL
+//          AND (LIMPIAR(TITULO) LIKE LIMPIAR(param_busqueda)
+//               OR LIMPIAR(AUTOR) LIKE LIMPIAR(param_busqueda)
+//               OR LIMPIAR(SAGA) LIKE LIMPIAR(param_busqueda))
+//    ) AS QUERY
+//    WHERE POSICION BETWEEN (param_posicion - 1) * param_ndatos + 1 AND param_posicion * param_ndatos
+//    ORDER BY ID_PRODUCTO;
+//END $$
+//DELIMITER ;
 
-//create procedure SP_GENEROS
-//as
-//	select distinct g.ID_GENERO, g.NOMBRE, g.DESCRIPCION from GENERO g
-//	inner join GENEROS_LIBROS gl on gl.ID_GENERO=g.ID_GENERO
-//	group by g.ID_GENERO, g.NOMBRE, g.DESCRIPCION
-//	order by g.NOMBRE
-//go
-
-
-//create procedure SP_SEARCH_PRODUCTOS_FILTRO
-//(@busqueda nvarchar(255), @posicion int, @ndatos int, @categorias nvarchar(255), @generos nvarchar(255), @npaginas int out)
-//as
-//	select @npaginas=CEILING(COUNT(ID_PRODUCTO)/CAST(@ndatos AS FLOAT)) from
-//		(select ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA, ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//		from
-//			(select distinct ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA
-//			from V_PRODUCTO_BUSCADO
-//			where ID_CATEGORIA in (select CAST(value as int) from STRING_SPLIT(@categorias, ','))
-//			and ID_GENERO in (select CAST(value as int) from STRING_SPLIT(@generos, ','))
-//			) DISTINTOS
-//		) AGRUPADOS
-//	where REPETICION=1
-//	and TITULO is not null
-//	and AUTOR is not null
-//	and dbo.LIMPIAR(TITULO) like @busqueda
-//	or dbo.LIMPIAR(AUTOR) like @busqueda
-//	and REPETICION = 1
-//	or dbo.LIMPIAR(SAGA) like @busqueda
-//	and REPETICION = 1
-//	select ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
-//	from
-//		(select ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
-//        ROW_NUMBER() over (order by ID_PRODUCTO) POSICION
-//		from 
-//		(select 
-//		ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA,
-//        ROW_NUMBER() over(partition by TITULO, AUTOR order by ID_PRODUCTO) REPETICION
-//		from
-//			(select distinct ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA
-//			from V_PRODUCTO_BUSCADO
-//			where ID_CATEGORIA in (select CAST(value as int) from STRING_SPLIT(@categorias, ','))
-//			and ID_GENERO in (select CAST(value as int) from STRING_SPLIT(@generos, ','))) QUERY) GRUPO
-//		where REPETICION = 1
-//		and TITULO is not null
-//		and AUTOR is not null
-//		and dbo.LIMPIAR(TITULO) like @busqueda
-//		or dbo.LIMPIAR(AUTOR) like @busqueda
-//		and REPETICION = 1
-//		or dbo.LIMPIAR(SAGA) like @busqueda
-//		and REPETICION = 1) QUERY
-//	where POSICION>=@ndatos*@posicion-(@ndatos-1) and POSICION<=@posicion*@ndatos
-//	order by ID_PRODUCTO
-//go
+//DELIMITER $$
+//DROP PROCEDURE IF EXISTS SP_SEARCH_PRODUCTOS_FILTRO $$
+//CREATE PROCEDURE SP_SEARCH_PRODUCTOS_FILTRO(
+//    IN param_busqueda NVARCHAR(255),
+//    IN param_posicion INT,
+//    IN param_ndatos INT,
+//    IN param_categorias VARCHAR(255),
+//    IN param_generos VARCHAR(255),
+//    OUT param_npaginas INT
+//)
+//BEGIN
+//    SELECT CEILING(COUNT(ID_PRODUCTO) / param_ndatos) INTO param_npaginas
+//    FROM (
+//        SELECT ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA,
+//               ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//        FROM (
+//            SELECT DISTINCT ID_PRODUCTO, ID_LIBRO, TITULO, AUTOR, SAGA
+//            FROM V_PRODUCTO_BUSCADO
+//            WHERE FIND_IN_SET(ID_CATEGORIA, REPLACE(param_categorias, ' ', '')) > 0
+//				AND FIND_IN_SET(ID_GENERO, REPLACE(param_generos, ' ', '')) > 0
+//        ) AS DISTINTOS
+//    ) AS AGRUPADOS
+//    WHERE REPETICION = 1
+//      AND TITULO IS NOT NULL
+//      AND AUTOR IS NOT NULL
+//      AND (LIMPIAR(TITULO) LIKE LIMPIAR(param_busqueda)
+//           OR LIMPIAR(AUTOR) LIKE LIMPIAR(param_busqueda)
+//           OR LIMPIAR(SAGA) LIKE LIMPIAR(param_busqueda));
+//SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES
+//    FROM (
+//        SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES,
+//           ROW_NUMBER() OVER (ORDER BY ID_PRODUCTO) AS POSICION
+//        FROM (
+//            SELECT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA,
+//               ROW_NUMBER() OVER (PARTITION BY TITULO, AUTOR ORDER BY ID_PRODUCTO) AS REPETICION
+//            FROM (
+//                SELECT DISTINCT ID_PRODUCTO, ID_LIBRO, TITULO, PORTADA, AUTOR, PRECIO, ID_FORMATO, FORMATO, UNIDADES, SAGA
+//                FROM V_PRODUCTO_BUSCADO
+//                WHERE FIND_IN_SET(ID_CATEGORIA, REPLACE(param_categorias, ' ', '')) > 0
+//					 AND FIND_IN_SET(ID_GENERO, REPLACE(param_generos, ' ', '')) > 0
+//            ) AS QUERY
+//        ) AS GRUPO
+//        WHERE REPETICION = 1
+//          AND TITULO IS NOT NULL
+//          AND AUTOR IS NOT NULL
+//          AND (LIMPIAR(TITULO) LIKE LIMPIAR(param_busqueda)
+//               OR LIMPIAR(AUTOR) LIKE LIMPIAR(param_busqueda)
+//               OR LIMPIAR(SAGA) LIKE LIMPIAR(param_busqueda))
+//    ) AS QUERY
+//    WHERE POSICION BETWEEN (param_posicion - 1) * param_ndatos + 1 AND param_posicion * param_ndatos
+//    ORDER BY ID_PRODUCTO;
+//END $$
+//DELIMITER ;
 #endregion
 
 namespace ApiAthanasia.Repositories
@@ -436,19 +464,56 @@ namespace ApiAthanasia.Repositories
                 palabra = "";
             }
             string busqueda = palabra.Limpiar();
-            string sql = "SP_SEARCH_PRODUCTOS @busqueda,@posicion,@ndatos,@npaginas out";
-            MySqlParameter parambusqueda = new MySqlParameter("@busqueda", "%" + busqueda + "%");
-            MySqlParameter paramposicion = new MySqlParameter("@posicion", posicion);
-            MySqlParameter paramndatos = new MySqlParameter("@ndatos", ndatos);
-            MySqlParameter paramnpaginas = new MySqlParameter("@npaginas", -1);
-            paramnpaginas.Direction = ParameterDirection.Output;
-            var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql, parambusqueda, paramposicion, paramndatos, paramnpaginas);
-            List<ProductoSimpleView> productos = await consulta.ToListAsync();
-            int registros = int.Parse(paramnpaginas.Value.ToString());
+            var productos = new List<ProductoSimpleView>();
+            int numeroPaginas = 0;
+
+            using (DbConnection connection = context.Database.GetDbConnection())
+            {
+                using (DbCommand com = connection.CreateCommand())
+                {
+                    string sql = "SP_SEARCH_PRODUCTOS";
+                    com.CommandText = sql;
+                    com.CommandType = CommandType.StoredProcedure;
+                    MySqlParameter parambusqueda = new MySqlParameter("@param_busqueda", "%" + busqueda + "%");
+                    MySqlParameter paramposicion = new MySqlParameter("@param_posicion", posicion);
+                    MySqlParameter paramndatos = new MySqlParameter("@param_ndatos", ndatos);
+                    MySqlParameter paramnpaginas = new MySqlParameter("@param_npaginas", -1);
+                    paramnpaginas.MySqlDbType = MySqlDbType.Int32;
+                    paramnpaginas.Direction = ParameterDirection.Output;
+                    com.Parameters.Add(parambusqueda);
+                    com.Parameters.Add(paramposicion);
+                    com.Parameters.Add(paramndatos);
+                    com.Parameters.Add(paramnpaginas);
+                    await connection.OpenAsync();
+                    using (DbDataReader reader = await com.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var producto = new ProductoSimpleView
+                            {
+                                IdProducto = int.Parse(reader["ID_PRODUCTO"].ToString()),
+                                IdLibro = int.Parse(reader["ID_LIBRO"].ToString()),
+                                Titulo = reader["TITULO"].ToString(),
+                                Portada = reader["PORTADA"].ToString(),
+                                Autor = reader["AUTOR"].ToString(),
+                                Precio = double.Parse(reader["PRECIO"].ToString()),
+                                IdFormato = int.Parse(reader["ID_FORMATO"].ToString()),
+                                Formato = reader["FORMATO"].ToString(),
+                                Unidades = int.Parse(reader["UNIDADES"].ToString())
+                            };
+                            productos.Add(producto);
+                        }
+                        await reader.CloseAsync();
+                        numeroPaginas = (int)paramnpaginas.Value;
+                        com.Parameters.Clear();
+                        await connection.CloseAsync();
+                    }
+                }
+            }
             PaginacionModel<ProductoSimpleView> model = new PaginacionModel<ProductoSimpleView>
             {
                 Lista = productos,
-                NumeroPaginas = registros
+                NumeroPaginas = numeroPaginas
             };
             return model;
 
@@ -478,21 +543,60 @@ namespace ApiAthanasia.Repositories
                 palabra = "";
             }
             string busqueda = palabra.Limpiar();
-            string sql = "SP_SEARCH_PRODUCTOS_FILTRO @busqueda,@posicion,@ndatos,@categorias,@generos,@npaginas out";
-            MySqlParameter parambusqueda = new MySqlParameter("@busqueda", "%" + busqueda + "%");
-            MySqlParameter paramposicion = new MySqlParameter("@posicion", posicion);
-            MySqlParameter paramndatos = new MySqlParameter("@ndatos", ndatos);
-            MySqlParameter paramcategorias = new MySqlParameter("@categorias", categorias);
-            MySqlParameter paramgeneros = new MySqlParameter("@generos", generos);
-            MySqlParameter paramnpaginas = new MySqlParameter("@npaginas", -1);
-            paramnpaginas.Direction = ParameterDirection.Output;
-            var consulta = this.context.ProductosSimplesView.FromSqlRaw(sql, parambusqueda, paramposicion, paramndatos, paramcategorias, paramgeneros, paramnpaginas);
-            List<ProductoSimpleView> productos = await consulta.ToListAsync();
-            int registros = int.Parse(paramnpaginas.Value.ToString());
+            var productos = new List<ProductoSimpleView>();
+            int numeroPaginas = 0;
+
+            using (DbConnection connection = context.Database.GetDbConnection())
+            {
+                using (DbCommand com = connection.CreateCommand())
+                {
+                    string sql = "SP_SEARCH_PRODUCTOS_FILTRO";
+                    com.CommandText = sql;
+                    com.CommandType = CommandType.StoredProcedure;
+                    MySqlParameter parambusqueda = new MySqlParameter("@param_busqueda", "%" + busqueda + "%");
+                    MySqlParameter paramposicion = new MySqlParameter("@param_posicion", posicion);
+                    MySqlParameter paramndatos = new MySqlParameter("@param_ndatos", ndatos);
+                    MySqlParameter paramcategorias = new MySqlParameter("@param_categorias", categorias);
+                    MySqlParameter paramgeneros = new MySqlParameter("@param_generos", generos);
+                    MySqlParameter paramnpaginas = new MySqlParameter("@param_npaginas", -1);
+                    paramnpaginas.MySqlDbType = MySqlDbType.Int32;
+                    paramnpaginas.Direction = ParameterDirection.Output;
+                    com.Parameters.Add(parambusqueda);
+                    com.Parameters.Add(paramposicion);
+                    com.Parameters.Add(paramndatos);
+                    com.Parameters.Add(paramcategorias);
+                    com.Parameters.Add(paramgeneros);
+                    com.Parameters.Add(paramnpaginas);
+                    await connection.OpenAsync();
+                    using (DbDataReader reader = await com.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var producto = new ProductoSimpleView
+                            {
+                                IdProducto = int.Parse(reader["ID_PRODUCTO"].ToString()),
+                                IdLibro = int.Parse(reader["ID_LIBRO"].ToString()),
+                                Titulo = reader["TITULO"].ToString(),
+                                Portada = reader["PORTADA"].ToString(),
+                                Autor = reader["AUTOR"].ToString(),
+                                Precio = double.Parse(reader["PRECIO"].ToString()),
+                                IdFormato = int.Parse(reader["ID_FORMATO"].ToString()),
+                                Formato = reader["FORMATO"].ToString(),
+                                Unidades = int.Parse(reader["UNIDADES"].ToString())
+                            };
+                            productos.Add(producto);
+                        }
+                        await reader.CloseAsync();
+                        numeroPaginas = (int)paramnpaginas.Value;
+                        com.Parameters.Clear();
+                        await connection.CloseAsync();
+                    }
+                }
+            }
             PaginacionModel<ProductoSimpleView> model = new PaginacionModel<ProductoSimpleView>
             {
                 Lista = productos,
-                NumeroPaginas = registros
+                NumeroPaginas = numeroPaginas
             };
             return model;
         }
