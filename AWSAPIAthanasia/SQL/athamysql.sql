@@ -84,7 +84,7 @@ CREATE TABLE `PEDIDO` (
   `FECHA_ENTREGA` DATE DEFAULT NULL,
   `ID_ESTADO_PEDIDO` INT DEFAULT NULL,
   PRIMARY KEY (`ID_PEDIDO`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;       
 -- VIEW V_PEDIDO
 CREATE VIEW `V_PEDIDO` AS
 SELECT
@@ -120,7 +120,7 @@ CREATE TABLE `CATEGORIA` (
   `NOMBRE` VARCHAR(255) DEFAULT NULL,
   `DESCRIPCION` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`ID_CATEGORIA`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 CREATE TABLE `SAGA` (
   `ID_SAGA` INT NOT NULL,
@@ -176,8 +176,8 @@ SELECT
   p.PRECIO,
   p.ID_FORMATO,
   f.NOMBRE AS FORMATO,
-  1 AS UNIDADES  -- Cast to INT explicitly for consistency
-FROM Libro l
+  1 AS UNIDADES
+FROM LIBRO l
 LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR AND l.TITULO IS NOT NULL AND a.NOMBRE IS NOT NULL
 INNER JOIN PRODUCTO p ON l.ID_LIBRO = p.ID_LIBRO AND p.PRECIO IS NOT NULL
 INNER JOIN FORMATO f ON p.ID_FORMATO = f.ID_FORMATO AND f.NOMBRE IS NOT NULL;
@@ -192,11 +192,11 @@ SELECT
   p.PRECIO,
   p.ID_FORMATO,
   f.NOMBRE AS FORMATO,
-  G.ID_GENERO,
+  g.ID_GENERO,
   l.ID_CATEGORIA,
   1 AS UNIDADES,
   s.NOMBRE AS SAGA
-FROM Libro l
+FROM LIBRO l
 LEFT JOIN AUTOR a ON l.ID_AUTOR = a.ID_AUTOR AND l.TITULO IS NOT NULL AND a.NOMBRE IS NOT NULL
 INNER JOIN PRODUCTO p ON l.ID_LIBRO = p.ID_LIBRO AND p.PRECIO IS NOT NULL
 INNER JOIN FORMATO f ON p.ID_FORMATO = f.ID_FORMATO AND f.NOMBRE IS NOT NULL
@@ -321,10 +321,10 @@ INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (8, N'Paul
 INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (9, N'Haruki Murakami', N'Escritor japonés, conocido por su estilo surrealista y sus historias que exploran la soledad, el aislamiento y la búsqueda de la identidad.', N'haruki_murakami.png');
 INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (10, N'Neil Gaiman', N'Escritor británico, autor de novelas como "American ds" y "Coraline", que mezclan fantasía, mitología y temas contemporáneos.', N'neil_gaiman.png');
 INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (11, N'Patrick Rothfuss', N'Autor estadounidense de fantasía épica, famoso por la trilogía "Crónica del Rey Matarreyes" y la novela "El nombre del viento". Sus obras se caracterizan por su complejo sistema de magia, sus personajes memorables y su prosa poética.', N'patrick_rothfuss.png');
-INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (12, N'Robert Jordan', N'Autor estadounidense de fantasía épica, conocido por la saga "La rueda del tiempo". Crea un mundo extenso y complejo con una rica historia y personajes bien desarrollados. Sus obras son extensas y llenas de acción, con tramas que abarcan varios libros.', N'robert_jordan.png');
+INSERT `AUTOR` (`ID_AUTOR`, `NOMBRE`, `DESCRIPCION`, `IMAGEN`) VALUES (12, N'Robert Jordan', N'Autor estadounidense de fantasía épica, conocido por la saga "La rueda del tiempo". Crea un mundo extenso y complejo con una rica historia y personajes bien desarrollados. Sus obras son extensas y llenas de acción, con tramas que abarcan varios LIBROs.', N'robert_jordan.png');
 
 INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (1, N'Ficción', N'Narraciones inventadas, que no se basan en hechos reales.');
-INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (2, N'No ficción', N'Narraciones que se basan en hechos reales, como biografías, libros de historia o documentales.');
+INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (2, N'No ficción', N'Narraciones que se basan en hechos reales, como biografías, LIBROs de historia o documentales.');
 INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (3, N'Cómic', N'Historias ilustradas que se narran en viñetas, con o sin texto.');
 INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (4, N'Manga', N'Cómic japonés, caracterizado por su estilo de dibujo y sus historias.');
 INSERT `CATEGORIA` (`ID_CATEGORIA`, `NOMBRE`, `DESCRIPCION`) VALUES (5, N'Juvenil', N'Literatura dirigida a jóvenes, generalmente entre 12 y 18 años.');
@@ -679,7 +679,7 @@ Los antiguos juramentos por fin se han pronunciado. Los hombres buscan lo que se
 
 Es la naturaleza de la magia. Un alma rota tiene grietas donde puede colarse al más. Las potencias, los poderes de la creación misma, pueden abrazar un alma rota, pero también pueden ampliar sus fisuras.
 
-El Corredor del Viento está perdido en una tierra quebrada, en equilibro entre la venganza y el honor. La Tejedora de Luz, lentamente consumida por su pasado, busca la mentira en la que debe convertirse. El Forjador de Vínculos, nacido en la sangre y la muerte, se esfuerza ahora por reconstruir lo que fue destruido. La Exploradora, a caballo entre los destinos de dos pueblos, se ve obligada a elegir entre una muerte lenta y una terrible traición a todo en lo que cree.
+El Corredor del Viento está perdido en una tierra quebrada, en equiLIBRO entre la venganza y el honor. La Tejedora de Luz, lentamente consumida por su pasado, busca la mentira en la que debe convertirse. El Forjador de Vínculos, nacido en la sangre y la muerte, se esfuerza ahora por reconstruir lo que fue destruido. La Exploradora, a caballo entre los destinos de dos pueblos, se ve obligada a elegir entre una muerte lenta y una terrible traición a todo en lo que cree.
 
 Ya es hora de despertarlos, pues acecha la eterna tormenta.
 
@@ -747,7 +747,7 @@ INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (45, N'La caza del carnero salvaje', N'La historia comienza con un joven publicista sin nombre que, tras divorciarse y experimentar una profunda desolación, se embarca en una peculiar búsqueda. Una fotografía, aparentemente anodina, de un rebaño de ovejas con un carnero de características especiales, lo ha puesto en la mira de un poderoso grupo empresarial. Amenazado por este grupo, el joven decide huir y refugiarse en las montañas del norte de Japón.', CAST(N'1991-09-01' AS Date), N'LaCazaDelCarneroSalvaje.png', 9, 1, NULL);
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (46, N'Kafka en la Orilla', N'Un adolescente huye de casa y se embarca en un viaje surrealista.', CAST(N'2002-09-01' AS Date), N'KafkaEnLaOrilla.png', 9, 1, NULL);
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (47, N'Crónica del Pájaro Mecánico', N'Un joven busca a una chica desaparecida en un mundo distópico.', CAST(N'1997-06-01' AS Date), N'CronicaDelPajaroMecanico.png', 9, 1, NULL);
-INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (48, N'After Dark', N'Cerca de la medianoche, Mari, una joven estudiante, se encuentra en un café leyendo un libro. Un joven músico llamado Takahashi la interrumpe. Mari ha perdido el último tren a casa y planea pasar la noche leyendo. Takahashi se va a ensayar con su banda, pero promete regresar antes del amanecer.', CAST(N'2004-10-01' AS Date), N'AfterDark.png', 9, 1, NULL);
+INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (48, N'After Dark', N'Cerca de la medianoche, Mari, una joven estudiante, se encuentra en un café leyendo un LIBRO. Un joven músico llamado Takahashi la interrumpe. Mari ha perdido el último tren a casa y planea pasar la noche leyendo. Takahashi se va a ensayar con su banda, pero promete regresar antes del amanecer.', CAST(N'2004-10-01' AS Date), N'AfterDark.png', 9, 1, NULL);
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (49, N'American ds', N'Un ex convicto se embarca en un viaje por Estados Unidos para descubrir que los antiguos dioses están luchando contra los nuevos dioses, como la tecnología y los medios de comunicación.', CAST(N'2001-06-01' AS Date), N'Americands.png', 10, 1, NULL);
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (50, N'Coraline', N'Una niña aventurera descubre una puerta secreta que la lleva a una versión alternativa de su casa, pero con algunos cambios inquietantes.', CAST(N'2002-01-01' AS Date), N'Coraline.png', 10, 5, NULL);
 INSERT `LIBRO` (`ID_LIBRO`, `TITULO`, `SINOPSIS`, `FECHA_PUBLICACION`, `PORTADA`, `ID_AUTOR`, `ID_CATEGORIA`, `ID_SAGA`) VALUES (51, N'Stardust', N'Un joven se embarca en una aventura para encontrar una estrella fugaz que ha caído en la tierra, solo para descubrir que es más de lo que esperaba.', CAST(N'1999-10-01' AS Date), N'Stardust.png', 10, 1, NULL);
@@ -772,10 +772,10 @@ INSERT `METODO_PAGO` (`ID_METODO_PAGO`, `NOMBRE`) VALUES (5, N'MasterCard');
 INSERT `METODO_PAGO` (`ID_METODO_PAGO`, `NOMBRE`) VALUES (6, N'Maestro International');
 INSERT `METODO_PAGO` (`ID_METODO_PAGO`, `NOMBRE`) VALUES (7, N'PayPal');
 
-INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (1, N'Favorito', N'Libro que ha dejado una impresión profunda y que se considera especialmente valioso.');
-INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (2, N'Leído', N'Libro que se ha completado de leer.');
-INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (3, N'Pendiente', N'Libro que se desea leer en el futuro.');
-INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (4, N'Descartado', N'Libro que no se ha completado de leer y que no se tiene intención de leer en el futuro.');
+INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (1, N'Favorito', N'LIBRO que ha dejado una impresión profunda y que se considera especialmente valioso.');
+INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (2, N'Leído', N'LIBRO que se ha completado de leer.');
+INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (3, N'Pendiente', N'LIBRO que se desea leer en el futuro.');
+INSERT `OPINION` (`ID_OPINION`, `NOMBRE`, `DESCRIPCION`) VALUES (4, N'Descartado', N'LIBRO que no se ha completado de leer y que no se tiene intención de leer en el futuro.');
 
 INSERT `PEDIDO` (`ID_PEDIDO`, `ID_USUARIO`, `FECHA_SOLICITUD`, `FECHA_ESTIMADA`, `FECHA_ENTREGA`, `ID_ESTADO_PEDIDO`) VALUES (1, 6, CAST(N'2024-03-18' AS Date), CAST(N'2024-03-21' AS Date), NULL, 7);
 INSERT `PEDIDO` (`ID_PEDIDO`, `ID_USUARIO`, `FECHA_SOLICITUD`, `FECHA_ESTIMADA`, `FECHA_ENTREGA`, `ID_ESTADO_PEDIDO`) VALUES (2, 6, CAST(N'2024-04-01' AS Date), CAST(N'2024-04-04' AS Date), NULL, 2);
@@ -982,7 +982,7 @@ INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (1, N'Nacidos de la br
 INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (2, N'El archivo de las tormentas', N'El archivo de las tormentas es una saga de literatura fantástica épica escrita por Brandon Sanderson. La historia se desarrolla en el desolado mundo de Roshar, donde una tormenta sin fin azota la tierra y la sociedad se divide en diferentes naciones que luchan por la supervivencia. La saga sigue a un grupo de personajes conocidos como los Caballeros Radiantes mientras intentan descubrir los secretos del pasado de Roshar y restaurar la paz en el mundo.');
 INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (3, N'Harry Potter', N'Harry Potter es una serie de siete novelas fantásticas escritas por la autora británica J.K. Rowling. La historia gira en torno a Harry Potter, un joven huérfano que descubre que es un ma en su undécimo cumpleaños.');
 INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (4, N'Crónica del Asesino de Reyes', N'En ella se narra la vida de Kvothe, aventurero, arcanista y músico famoso. La trama está dividida en dos tiempos diferentes: el presente, en el que Kvothe le cuenta su historia a Devan Lochees, y el pasado, en el que se desarrolla la mayor parte de la historia.');
-INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (5, N'La Rueda del Tiempo', N'La Rueda del Tiempo es una saga de fantasía épica compuesta por 14 libros, escrita por el autor estadounidense Robert Jordan y completada tras su fallecimiento por Brandon Sanderson. La historia se desarrolla en un mundo extenso y complejo, donde la magia, llamada el Poder Único, está presente en diferentes grados en hombres y mujeres. La Rueda del Tiempo, una fuerza cíclica que rige el destino del mundo, gira sin cesar, tejiendo la historia y trayendo consi diferentes eras.');
+INSERT `SAGA` (`ID_SAGA`, `NOMBRE`, `DESCRIPCION`) VALUES (5, N'La Rueda del Tiempo', N'La Rueda del Tiempo es una saga de fantasía épica compuesta por 14 LIBROs, escrita por el autor estadounidense Robert Jordan y completada tras su fallecimiento por Brandon Sanderson. La historia se desarrolla en un mundo extenso y complejo, donde la magia, llamada el Poder Único, está presente en diferentes grados en hombres y mujeres. La Rueda del Tiempo, una fuerza cíclica que rige el destino del mundo, gira sin cesar, tejiendo la historia y trayendo consi diferentes eras.');
 
 INSERT `USUARIO` (`ID_USUARIO`, `NOMBRE`, `APELLIDO`, `EMAIL`, `PASSWORD`, `IMAGEN`, `PASS`, `SALT`, `TOKEN`, `ID_ROL`, `ID_ESTADO`) VALUES (1, N'Administrador', N'Admin', N'admin@example.com', N'admin', N'usuario.png', 0x027CFDC8D14AEBEA06C9CCEEBC201C0524A2A2AA325550E56D3CF8CE0B1DF48323866468B7AF1261120981EA3AC41BE0B4F1453CCC98833309D3F9FAAFF31220, N'£!¢h_-¥î	:òð¦øìá¤-¤LÂò!Ù³çø', N'', 1, 1);
 INSERT `USUARIO` (`ID_USUARIO`, `NOMBRE`, `APELLIDO`, `EMAIL`, `PASSWORD`, `IMAGEN`, `PASS`, `SALT`, `TOKEN`, `ID_ROL`, `ID_ESTADO`) VALUES (2, N'Juan', N'Pérez', N'juan.perez@example.com', N'juan', N'usuario.png', 0xA97CF9DCE67F2C118CDBDD549A6F1060875B3A86EE1DCC41CD0B9036B3E56569D771A8545D4887E428705DB6C0E67023DDB9BCFD5EDBBAB963628F953AD76FE3, N'GD.ªú~¨ü´<@!Cýh8X#ãZª	¤Æ;Ò¾é¦', N'', 2, 1);
@@ -1212,7 +1212,7 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
-
+DROP FUNCTION if EXISTS LIMPIAR $$
 CREATE FUNCTION LIMPIAR(str NVARCHAR(255))
 RETURNS NVARCHAR(255)
 DETERMINISTIC
@@ -1248,5 +1248,4 @@ BEGIN
     SET str = UPPER(str);
     RETURN str;
 END $$
-
 DELIMITER ;
