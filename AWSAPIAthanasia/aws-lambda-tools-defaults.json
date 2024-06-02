@@ -6,12 +6,12 @@
         "dotnet lambda help",
         "All the command line options for the Lambda command can be specified in this file."
     ],
-    "profile"     : "user-visual-studio",
+    "profile"     : "user-alberto",
     "region"      : "us-east-1",
     "configuration" : "Release",
     "s3-prefix"     : "AWSAPIAthanasia/",
     "template"      : "serverless.template",
     "template-parameters" : "",
-    "s3-bucket"           : "bucket-apis-mauricio",
+    "s3-bucket"           : "bucket-proyecto-aws",
     "stack-name"          : "AWSAPIAthanasia"
 }

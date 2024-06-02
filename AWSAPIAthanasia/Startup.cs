@@ -4,6 +4,9 @@ using ApiAthanasia.Repositories;
 using NSwag.Generation.Processors.Security;
 using NSwag;
 using Microsoft.EntityFrameworkCore;
+using AWSAPIAthanasia.Helpers;
+using AWSAPIAthanasia.Models.Util;
+using Newtonsoft.Json;
 
 namespace AWSAPIAthanasia;
 
@@ -19,13 +22,19 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
+
         services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
 
+        string jsonSecrets =  HelperSecretManager.GetSecretsAsync().GetAwaiter().GetResult();
+        KeysModel keysModel = JsonConvert.DeserializeObject<KeysModel>(jsonSecrets);
+
+        services.AddSingleton<KeysModel>(x => keysModel);
+
         HelperActionServicesOAuth helper = new HelperActionServicesOAuth();
         services.AddSingleton<HelperActionServicesOAuth>(helper);
-        string connectionString = "server=awsmysqlathanasia.cri8go8eknpq.us-east-1.rds.amazonaws.com;port=3306;user id=adminsql;password=Admin123;database=ATHANASIA";
+        string connectionString = keysModel.MySql; /*"server=awsmysqlathanasia.cri8go8eknpq.us-east-1.rds.amazonaws.com;port=3306;user id=adminsql;password=Admin123;database=ATHANASIA"*/
         services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
         services.AddOpenApiDocument(document =>
         {
