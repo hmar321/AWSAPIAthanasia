@@ -32,9 +32,9 @@ public class Startup
 
         services.AddSingleton<KeysModel>(x => keysModel);
 
-        HelperActionServicesOAuth helper = new HelperActionServicesOAuth();
+        HelperActionServicesOAuth helper = new HelperActionServicesOAuth(keysModel);
         services.AddSingleton<HelperActionServicesOAuth>(helper);
-        string connectionString = keysModel.MySql; /*"server=awsmysqlathanasia.cri8go8eknpq.us-east-1.rds.amazonaws.com;port=3306;user id=adminsql;password=Admin123;database=ATHANASIA"*/
+        string connectionString = keysModel.MySqlAWS; /*"server=awsmysqlathanasia.cri8go8eknpq.us-east-1.rds.amazonaws.com;port=3306;user id=adminsql;password=Admin123;database=ATHANASIA"*/
         services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
         services.AddOpenApiDocument(document =>
         {
