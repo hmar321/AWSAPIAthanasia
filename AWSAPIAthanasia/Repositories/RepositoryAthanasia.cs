@@ -4,15 +4,10 @@ using ApiAthanasia.Helpers;
 using ApiAthanasia.Models.Tables;
 using ApiAthanasia.Models.Util;
 using ApiAthanasia.Models.Views;
-using Azure.Security.KeyVault.Secrets;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.Metrics;
 
 #region VIEWS
 //CREATE VIEW `V_PEDIDO_PRODUCTO` AS

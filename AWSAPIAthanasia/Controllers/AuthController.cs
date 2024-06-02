@@ -2,13 +2,11 @@
 using ApiAthanasia.Models;
 using ApiAthanasia.Models.Tables;
 using ApiAthanasia.Repositories;
-using Azure.Security.KeyVault.Secrets;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace ApiAthanasia.Controllers
 {
@@ -21,12 +19,11 @@ namespace ApiAthanasia.Controllers
         private string encriptKey;
 
 
-        public AuthController(IRepositoryAthanasia repo, HelperActionServicesOAuth helper, SecretClient secretClient)
+        public AuthController(IRepositoryAthanasia repo, HelperActionServicesOAuth helper)
         {
             this.repo = repo;
             this.helper = helper;
-            KeyVaultSecret secretIssuer = secretClient.GetSecret("EncriptKey");
-            this.encriptKey = secretIssuer.Value;
+            this.encriptKey = "R7&b€zL2.sP%tN9iG6oY1Q5yX4wE8u";
         }
 
         /// <summary>

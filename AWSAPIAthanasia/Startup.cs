@@ -1,10 +1,8 @@
 using ApiAthanasia.Data;
 using ApiAthanasia.Helpers;
 using ApiAthanasia.Repositories;
-using Azure.Security.KeyVault.Secrets;
 using NSwag.Generation.Processors.Security;
 using NSwag;
-using Microsoft.Extensions.Azure;
 using Microsoft.EntityFrameworkCore;
 
 namespace AWSAPIAthanasia;
@@ -24,14 +22,8 @@ public class Startup
         services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
-        services.AddAzureClients(factory =>
-        {
-            factory.AddSecretClient(this.Configuration.GetSection("KeyVault"));
-        });
-        SecretClient secretClient = services.BuildServiceProvider().GetService<SecretClient>();
-        HelperActionServicesOAuth helper = new HelperActionServicesOAuth(secretClient);
+        HelperActionServicesOAuth helper = new HelperActionServicesOAuth();
         services.AddSingleton<HelperActionServicesOAuth>(helper);
-        KeyVaultSecret secret = secretClient.GetSecret("SqlServerAzure");
         string connectionString = "server=localhost;port=3306;user id=root;password=Admin123@;database=athanasia";
         services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
         services.AddOpenApiDocument(document =>
@@ -68,13 +60,13 @@ public class Startup
         app.UseOpenApi();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint(url: "/swagger/v1/swagger.json", name: "Api Athanasia");
+            options.SwaggerEndpoint(url: "swagger/v1/swagger.json", name: "Api Athanasia");
             options.RoutePrefix = "";
         });
 
         app.UseHttpsRedirection();
-        app.UseAuthentication();
         app.UseRouting();
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.UseEndpoints(endpoints =>
