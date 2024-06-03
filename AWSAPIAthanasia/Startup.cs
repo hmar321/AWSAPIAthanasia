@@ -1,9 +1,13 @@
-using ApiAthanasia.Data;
-using ApiAthanasia.Helpers;
-using ApiAthanasia.Repositories;
+using Microsoft.OpenApi.Models;
 using NSwag.Generation.Processors.Security;
 using NSwag;
+using ApiAthanasia.Repositories;
+using ApiAthanasia.Data;
 using Microsoft.EntityFrameworkCore;
+using AWSAPIAthanasia.Models.Util;
+using Newtonsoft.Json;
+using AWSAPIAthanasia.Helpers;
+using ApiAthanasia.Helpers;
 
 namespace AWSAPIAthanasia;
 
@@ -19,14 +23,10 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        services.AddEndpointsApiExplorer();
-
-        HelperActionServicesOAuth helper = new HelperActionServicesOAuth();
-        services.AddSingleton<HelperActionServicesOAuth>(helper);
-        string connectionString = "server=awsmysqlathanasia.cri8go8eknpq.us-east-1.rds.amazonaws.com;port=3306;user id=adminsql;password=Admin123;database=ATHANASIA";
-        services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowOrigin", x => x.AllowAnyOrigin());
+        });
         services.AddOpenApiDocument(document =>
         {
             document.Title = "Api Athanasia";
@@ -44,12 +44,22 @@ public class Startup
             document.OperationProcessors.Add(
             new AspNetCoreOperationSecurityScopeProcessor("JWT"));
         });
-        services.AddTransient<HelperMails>();
+        services.AddEndpointsApiExplorer();
+        services.AddControllers();
         services.AddAutoMapper(typeof(MappingProfile));
         services.AddTransient<IRepositoryAthanasia, RepositoryAthanasia>();
+        string jsonSecrets = HelperSecretManager.GetSecretsAsync().GetAwaiter().GetResult();
+        KeysModel keysModel = JsonConvert.DeserializeObject<KeysModel>(jsonSecrets);
+        HelperActionServicesOAuth helper = new HelperActionServicesOAuth(keysModel);
+        services.AddAuthentication(helper.GetAuthenticateSchema()).AddJwtBearer(helper.GetJwtBearerOptions());
+        services.AddTransient<HelperActionServicesOAuth>(x => helper);
+        services.AddSingleton<KeysModel>(x => keysModel);
+        string connectionString = keysModel.MySqlAWS;
         services.AddDbContext<AthanasiaContext>(
             options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
             );
+
+
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
@@ -57,16 +67,17 @@ public class Startup
     {
         if (env.IsDevelopment())
         {
+            app.UseDeveloperExceptionPage();
         }
         app.UseOpenApi();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint(url: "swagger/v1/swagger.json", name: "Api Athanasia");
+            options.SwaggerEndpoint(url: "/swagger/v1/swagger.json", name: "Api Athanasia");
             options.RoutePrefix = "";
         });
-
         app.UseHttpsRedirection();
         app.UseRouting();
+        app.UseCors(x => x.AllowAnyOrigin());
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -75,8 +86,9 @@ public class Startup
             endpoints.MapControllers();
             endpoints.MapGet("/", async context =>
             {
-                await context.Response.WriteAsync("Hola");
+                await context.Response.WriteAsync("Welcome to running ASP.NET Core on AWS Lambda");
             });
+            
         });
     }
 }

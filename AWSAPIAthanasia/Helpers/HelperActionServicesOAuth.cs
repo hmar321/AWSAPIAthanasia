@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using AWSAPIAthanasia.Models.Util;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -11,11 +12,11 @@ namespace ApiAthanasia.Helpers
         public string Audience { get; set; }
         public string SecretKey { get; set; }
 
-        public HelperActionServicesOAuth()
+        public HelperActionServicesOAuth(KeysModel keysModel)
         {
-            this.Issuer = "https://localhost:7281";
-            this.Audience = "ApiAthanasia";
-            this.SecretKey = "a0?b1c2d3easdasd€4f5a6$1b7c8%d9.e0as578df€1a%2be54tdy3c4d$1512e6fe678d23bg1f7€a0o8b10231asd9c0d0.1e2fasd$3a4b5";
+            this.Issuer = keysModel.Issuer;
+            this.Audience = keysModel.Audience;
+            this.SecretKey = keysModel.SecretKey;
         }
 
         public SymmetricSecurityKey GetKeyToken()

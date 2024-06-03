@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiAthanasia.Models.Tables
 {
-    [Table("Saga")]
+    [Table("SAGA")]
     public class Saga
     {
         [Key]

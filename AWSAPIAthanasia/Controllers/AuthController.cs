@@ -2,6 +2,7 @@
 using ApiAthanasia.Models;
 using ApiAthanasia.Models.Tables;
 using ApiAthanasia.Repositories;
+using AWSAPIAthanasia.Models.Util;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -19,11 +20,11 @@ namespace ApiAthanasia.Controllers
         private string encriptKey;
 
 
-        public AuthController(IRepositoryAthanasia repo, HelperActionServicesOAuth helper)
+        public AuthController(IRepositoryAthanasia repo, HelperActionServicesOAuth helper, KeysModel keysModel)
         {
             this.repo = repo;
             this.helper = helper;
-            this.encriptKey = "R7&b€zL2.sP%tN9iG6oY1Q5yX4wE8u";
+            this.encriptKey = keysModel.EncriptKey;
         }
 
         /// <summary>
